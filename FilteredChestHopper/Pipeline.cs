@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using StardewValley;
 using StardewValley.Objects;
@@ -76,10 +77,15 @@ namespace FilteredChestHopper
                     for (int i = chestAboveItems.Count - 1; i >= 0; i--)
                     {
                         bool match = true;
+                        int filterCount = 0;
                         for (int j = filterItems.Count - 1; j >= 0; j--)
                         {
                             if (filterItems[j].ItemId == chestAboveItems[i].ItemId && ( !mod.Config.CompareQuality || filterItems[j].Quality == chestAboveItems[i].Quality))
                             {
+                                if(mod.Config.CompareQuantity)
+                                {
+                                    filterCount = filterItems[j].Stack == 1 ? filterItems[j].maximumStackSize() : filterItems[j].Stack;
+                                }
                                 match = true;
                                 break;
                             }
@@ -91,9 +97,13 @@ namespace FilteredChestHopper
                         if (match)
                         {
                             Item item = chestAboveItems[i];
+                            if(filterCount > 0)
+                            {
+                                item.Stack = filterCount - outputChest[1].GetItemsForPlayer(inputChest.owner.Value).CountId(chestAboveItems[i].ItemId);
+                            }
                             if (outputChest[1].addItem(item) == null)
                             {
-                                chestAboveItems.RemoveAt(i);
+                                chestAboveItems[i].Stack -= item.Stack;
                             }
                         }
                     }
