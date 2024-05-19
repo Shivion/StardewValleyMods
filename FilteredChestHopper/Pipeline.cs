@@ -129,18 +129,14 @@ namespace FilteredChestHopper
                                 //or make a new one
                                 if (!hasStack)
                                 {
-                                    //this doesn't make a new item stack, it just adds it to the new chest
-                                    //which doesn't help me sadly, need to find a better way
-                                    if (outputChest[1].addItem(item) == null)
+                                    Item newItem = new StardewValley.Object(item.ItemId, item.Stack, item.IsRecipe, item.salePrice(), item.Quality);
+                                    if (newItem.Stack > filterCount)
                                     {
-                                        int index = outputChest[1].GetItemsForPlayer(inputChest.owner.Value).IndexOf(item);
-                                        Item newItem = outputChest[1].GetItemsForPlayer(inputChest.owner.Value)[index];
-                                        if (newItem.Stack > filterCount)
-                                        {
-                                            newItem.Stack = filterCount;
-                                        }
-
-                                        if (item.Stack > newItem.Stack)
+                                        newItem.Stack = filterCount;
+                                    }
+                                    if (outputChest[1].addItem(newItem) == null)
+                                    {
+                                        if (item.Stack == newItem.Stack)
                                         {
                                             chestAboveItems.RemoveAt(i);
                                         }
