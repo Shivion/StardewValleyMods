@@ -62,6 +62,14 @@ namespace FilteredChestHopper
                 setValue: value => this.Config.CompareQuality = value
             );
 
+            configMenu.AddBoolOption(
+                mod: this.ModManifest,
+                name: () => "Compare Quantity",
+                tooltip: () => "If true the filters will check the stack size of the item, and only place that many items in the target chest. Only having 1 item in the filter stack ignores the quantity filter for that item instead of only moving one (for ease of use)",
+                getValue: () => this.Config.CompareQuantity,
+                setValue: value => this.Config.CompareQuantity = value
+            );
+
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
                 name: () => "Tranfer Interval",

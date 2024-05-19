@@ -1,7 +1,10 @@
+using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.Linq;
 using Microsoft.Xna.Framework;
 using StardewValley;
+using StardewValley.Inventories;
 using StardewValley.Objects;
 namespace FilteredChestHopper
 {
@@ -84,7 +87,7 @@ namespace FilteredChestHopper
                             {
                                 if(mod.Config.CompareQuantity)
                                 {
-                                    filterCount = filterItems[j].Stack == 1 ? filterItems[j].maximumStackSize() : filterItems[j].Stack;
+                                    filterCount = filterItems[j].Stack == 1 ? 0 : filterItems[j].Stack;
                                 }
                                 match = true;
                                 break;
@@ -97,17 +100,80 @@ namespace FilteredChestHopper
                         if (match)
                         {
                             Item item = chestAboveItems[i];
+
                             if(filterCount > 0)
                             {
-                                item.Stack = filterCount - outputChest[1].GetItemsForPlayer(inputChest.owner.Value).CountId(chestAboveItems[i].ItemId);
+                                bool hasStack = false;
+                                //Check for an existing stack
+                                foreach (var itemStack in outputChest[1].GetItemsForPlayer(inputChest.owner.Value))
+                                {
+                                    if (itemStack.canStackWith(item))
+                                    {
+                                        hasStack = true;
+                                        int amountToMove = filterCount - itemStack.Stack;
+                                        if (amountToMove > filterCount)
+                                        {
+                                            amountToMove = filterCount;
+                                        }
+                                        if (amountToMove < 0)
+                                        {
+                                            amountToMove = 0;
+                                        }
+                                        itemStack.Stack += amountToMove;
+                                        if (amountToMove > 0)
+                                        {
+                                            item.Stack -= amountToMove;
+                                        }
+                                    }
+                                }
+                                //or make a new one
+                                if (!hasStack)
+                                {
+                                    //this doesn't make a new item stack, it just adds it to the new chest
+                                    //which doesn't help me sadly, need to find a better way
+                                    if (outputChest[1].addItem(item) == null)
+                                    {
+                                        int index = outputChest[1].GetItemsForPlayer(inputChest.owner.Value).IndexOf(item);
+                                        Item newItem = outputChest[1].GetItemsForPlayer(inputChest.owner.Value)[index];
+                                        if (newItem.Stack > filterCount)
+                                        {
+                                            newItem.Stack = filterCount;
+                                        }
+
+                                        if (item.Stack > newItem.Stack)
+                                        {
+                                            chestAboveItems.RemoveAt(i);
+                                        }
+                                        else
+                                        {
+                                            item.Stack -= newItem.Stack;
+                                        }
+                                    }
+                                }
                             }
-                            if (outputChest[1].addItem(item) == null)
+                            else
                             {
-                                chestAboveItems[i].Stack -= item.Stack;
+                                //The Easy Way
+                                if (outputChest[1].addItem(item) == null)
+                                {
+                                    chestAboveItems.RemoveAt(i);
+                                }
                             }
                         }
                     }
                 }
+            }
+        }
+
+        private void RemoveFromStack(IInventory chest, int index, int amount)
+        {
+            if(chest[index].Stack <= amount)
+            {
+                chest.RemoveAt(index);
+            }
+            else
+            {
+                chest[index].Stack -= amount;
             }
         }
 
