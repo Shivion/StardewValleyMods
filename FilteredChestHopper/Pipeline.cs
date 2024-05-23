@@ -83,7 +83,7 @@ namespace FilteredChestHopper
                         int filterCount = 0;
                         for (int j = filterItems.Count - 1; j >= 0; j--)
                         {
-                            if (filterItems[j].ItemId == chestAboveItems[i].ItemId && ( !mod.Config.CompareQuality || filterItems[j].Quality == chestAboveItems[i].Quality))
+                            if(filterItems[j] != null && chestAboveItems[i] != null && filterItems[j].ItemId == chestAboveItems[i].ItemId && (!mod.Config.CompareQuality || filterItems[j].Quality == chestAboveItems[i].Quality))
                             {
                                 if(mod.Config.CompareQuantity)
                                 {
