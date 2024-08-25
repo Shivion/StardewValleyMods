@@ -2,8 +2,11 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using StardewValley;
 using StardewValley.Objects;
-using Force.DeepCloner;
-using StardewValley.Menus;
+using System.Linq;
+using System;
+using StardewValley.ItemTypeDefinitions;
+using StardewValley.GameData.FishPonds;
+using Microsoft.Xna.Framework.Content;
 
 namespace FilteredChestHopper
 {
@@ -85,7 +88,8 @@ namespace FilteredChestHopper
                         {
                             if(filterItems[j] != null && chestAboveItems[i] != null && filterItems[j].QualifiedItemId == chestAboveItems[i].QualifiedItemId && (!mod.Config.CompareQuality || filterItems[j].Quality == chestAboveItems[i].Quality))
                             {
-                                if(mod.Config.CompareQuantity && chestAboveItems[i].TypeDefinitionId == ItemRegistry.type_object)
+                                //Should be able to hanlde all item types now
+                                if(mod.Config.CompareQuantity)// && chestAboveItems[i].TypeDefinitionId == ItemRegistry.type_object)
                                 {
                                     filterCount = filterItems[j].Stack == 1 ? 0 : filterItems[j].Stack;
                                 }
@@ -123,8 +127,31 @@ namespace FilteredChestHopper
                                 if (amountToMove < 1)
                                     continue;
 
+                                StardewValley.Object processedItem = null;
+
+                                foreach (string contextTag in item.GetContextTags())
+                                {
+                                    if(contextTag.Contains("preserve_sheet_index_"))
+                                    {
+                                        string processedItemID = contextTag.Replace("preserve_sheet_index_", ""); 
+                                        processedItem = new StardewValley.Object(processedItemID, item.Stack, item.IsRecipe, item.salePrice(), item.Quality);
+                                    }
+                                }
+
                                 //Make a new item stack
-                                Item newItem = new StardewValley.Object(item.ItemId, item.Stack, item.IsRecipe, item.salePrice(), item.Quality);
+                                Item newItem = null;
+                                //Handle varient items like wine
+                                if(processedItem != null)
+                                {
+                                    ObjectDataDefinition objectDataDefinition = (ObjectDataDefinition)ItemRegistry.GetTypeDefinition(ItemRegistry.type_object);
+                                    newItem = GetFlavoredObjectVariant(objectDataDefinition, item as StardewValley.Object, processedItem, ItemRegistry.ItemTypes.Find((potentailItem) => potentailItem.Identifier == item.TypeDefinitionId)).CreateItem();
+                                    newItem.Stack = item.Stack;
+                                    newItem.Quality = item.Quality;
+                                }
+                                else    
+                                {
+                                    newItem = ItemRegistry.Create(item.QualifiedItemId, item.Stack, item.Quality);
+                                }
 
                                 //Limit the new stack size to the amount to Move
                                 if (newItem.Stack > amountToMove)
@@ -171,6 +198,56 @@ namespace FilteredChestHopper
             public override int Compare(Chest x, Chest y)
             {
                 return x.TileLocation.X.CompareTo(y.TileLocation.X);
+            }
+        }
+
+        //Everything past this I adapted (stole) from CJB Item Spawner, thanks CJB
+
+        /// <summary>Get flavored variants of a base item (like Blueberry Wine for Blueberry), if any.</summary>
+        private FilteredItem GetFlavoredObjectVariant(ObjectDataDefinition objectDataDefinition, StardewValley.Object newItem, StardewValley.Object processedItem, IItemDataDefinition itemType)
+        {
+            string id = processedItem.ItemId;
+
+            switch(newItem.itemId.Value)
+            {
+                case "348":
+                    return this.TryCreate(itemType.Identifier, $"348/{id}", _ => objectDataDefinition.CreateFlavoredWine(processedItem));
+                case "344":
+                    return this.TryCreate(itemType.Identifier, $"344/{id}", _ => objectDataDefinition.CreateFlavoredJelly(processedItem));
+                case "350":
+                    return this.TryCreate(itemType.Identifier, $"350/{id}", _ => objectDataDefinition.CreateFlavoredJuice(processedItem));
+                case "342":
+                    return this.TryCreate(itemType.Identifier, $"342/{id}", _ => objectDataDefinition.CreateFlavoredPickle(processedItem));
+                case "340":
+                    return this.TryCreate(itemType.Identifier, $"340/{id}", _ => objectDataDefinition.CreateFlavoredHoney(processedItem));
+                case "812":
+                    return this.TryCreate(itemType.Identifier, $"812/{id}", _ => objectDataDefinition.CreateFlavoredRoe(processedItem));
+                case "447":
+                    return this.TryCreate(itemType.Identifier, $"447/{id}", _ => objectDataDefinition.CreateFlavoredAgedRoe(processedItem));
+            }
+            return null;
+        }
+
+
+        /// <summary>Create a searchable item if valid.</summary>
+        /// <param name="type">The item type.</param>
+        /// <param name="key">The locally unique item key.</param>
+        /// <param name="createItem">Create an item instance.</param>
+        private FilteredItem TryCreate(string type, string key, Func<FilteredItem, Item> createItem)
+        {
+            try
+            {
+                FilteredItem item = new FilteredItem(type, key, createItem);
+                item.Item.getDescription(); // force-load item data, so it crashes here if it's invalid
+
+                if (item.Item.Name is null or "Error Item")
+                    return null;
+
+                return item;
+            }
+            catch
+            {
+                return null; // if some item data is invalid, just don't include it
             }
         }
     }
