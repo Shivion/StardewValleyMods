@@ -86,7 +86,7 @@ namespace FilteredChestHopper
                         filterItems.RemoveEmptySlots();
                         for (int j = filterItems.Count - 1; j >= 0; j--)
                         {
-                            if(filterItems[j] != null && chestAboveItems[i] != null && filterItems[j].QualifiedItemId == chestAboveItems[i].QualifiedItemId && (!mod.Config.CompareQuality || filterItems[j].Quality == chestAboveItems[i].Quality))
+                            if(filterItems[j] != null && chestAboveItems[i] != null && filterItems[j].QualifiedItemId == chestAboveItems[i].QualifiedItemId && GetItemsFlavourID(filterItems[j]) == GetItemsFlavourID(chestAboveItems[i]) && (!mod.Config.CompareQuality || filterItems[j].Quality == chestAboveItems[i].Quality))
                             {
                                 //Should be able to hanlde all item types now
                                 if(mod.Config.CompareQuantity)// && chestAboveItems[i].TypeDefinitionId == ItemRegistry.type_object)
@@ -128,14 +128,10 @@ namespace FilteredChestHopper
                                     continue;
 
                                 StardewValley.Object processedItem = null;
-
-                                foreach (string contextTag in item.GetContextTags())
+                                string processedItemID = GetItemsFlavourID(item);
+                                if(string.IsNullOrEmpty(processedItemID))
                                 {
-                                    if(contextTag.Contains("preserve_sheet_index_"))
-                                    {
-                                        string processedItemID = contextTag.Replace("preserve_sheet_index_", ""); 
-                                        processedItem = new StardewValley.Object(processedItemID, item.Stack, item.IsRecipe, item.salePrice(), item.Quality);
-                                    }
+                                    processedItem = new StardewValley.Object(processedItemID, 0, false, 0, 0);
                                 }
 
                                 //Make a new item stack
@@ -199,6 +195,18 @@ namespace FilteredChestHopper
             {
                 return x.TileLocation.X.CompareTo(y.TileLocation.X);
             }
+        }
+
+        public string GetItemsFlavourID(Item item)
+        {
+            foreach (string contextTag in item.GetContextTags())
+            {
+                if(contextTag.Contains("preserve_sheet_index_"))
+                {
+                    return contextTag.Replace("preserve_sheet_index_", ""); 
+                }
+            }
+            return null;
         }
 
         //Everything past this I adapted (stole) from CJB Item Spawner, thanks CJB
