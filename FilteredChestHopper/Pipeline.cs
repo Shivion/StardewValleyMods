@@ -129,9 +129,9 @@ namespace FilteredChestHopper
 
                                 StardewValley.Object processedItem = null;
                                 string processedItemID = GetItemsFlavourID(item);
-                                if(string.IsNullOrEmpty(processedItemID))
+                                if(!string.IsNullOrEmpty(processedItemID))
                                 {
-                                    processedItem = new StardewValley.Object(processedItemID, 0, false, 0, 0);
+                                    processedItem = new StardewValley.Object(processedItemID,1);
                                 }
 
                                 //Make a new item stack
