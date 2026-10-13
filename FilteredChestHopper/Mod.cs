@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using GenericModConfigMenu;
 using Microsoft.Xna.Framework;
 using StardewModdingAPI;
@@ -136,7 +137,14 @@ namespace FilteredChestHopper
                 {
                     if (TryGetHopper(AddedObject.Value, out Chest hopper))
                     {
-                        Pipelines.RemoveAll(pipeline => pipeline.Hoppers.Count < 1 || AddedObject.Key == pipeline.Hoppers[0].TileLocation - new Vector2(1,0) || AddedObject.Key == pipeline.Hoppers[pipeline.Hoppers.Count - 1].TileLocation + new Vector2(1, 0));
+
+                        Pipelines.RemoveAll(pipeline =>
+                            pipeline.Location == e.Location &&
+                            (
+                                pipeline.Hoppers.Count < 1 ||
+                                AddedObject.Key == pipeline.Hoppers[0].TileLocation - new Vector2(1, 0) ||
+                                AddedObject.Key == pipeline.Hoppers[pipeline.Hoppers.Count - 1].TileLocation + new Vector2(1, 0)
+                            ));
                         Pipeline pipeline = new Pipeline(hopper);
                         Pipelines.Add(pipeline);
                     }
